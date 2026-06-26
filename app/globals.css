@@ -1,0 +1,119 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 243 75% 59%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 5% 96%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 240 5% 96%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 160 84% 39%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 243 75% 59%;
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 222 47% 11%;
+    --foreground: 210 40% 98%;
+    --card: 222 47% 11%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222 47% 11%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 243 75% 65%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 160 84% 45%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 217 33% 17%;
+    --input: 217 33% 17%;
+    --ring: 243 75% 65%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply tracking-tight;
+  }
+}
+
+@layer utilities {
+  .glass {
+    @apply bg-white/70 backdrop-blur-xl border border-white/20;
+  }
+  .dark .glass {
+    @apply bg-slate-900/70 backdrop-blur-xl border border-white/10;
+  }
+  .gradient-text {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 via-purple-600 to-emerald-600;
+  }
+  .dark .gradient-text {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-purple-400 to-emerald-400;
+  }
+  .card-shadow {
+    @apply shadow-[0_4px_20px_-2px_rgba(0,0,0,0.08)];
+  }
+  .card-shadow-hover {
+    @apply shadow-[0_20px_40px_-4px_rgba(0,0,0,0.12)];
+  }
+  .text-balance {
+    text-wrap: balance;
+  }
+  .prose h2 {
+    @apply text-2xl font-bold mt-10 mb-4 text-foreground;
+  }
+  .prose h3 {
+    @apply text-xl font-bold mt-8 mb-3 text-foreground;
+  }
+  .prose p {
+    @apply my-4 leading-relaxed text-foreground/90;
+  }
+  .prose ul {
+    @apply my-4 list-disc list-inside space-y-2 text-foreground/90;
+  }
+  .prose ol {
+    @apply my-4 list-decimal list-inside space-y-2 text-foreground/90;
+  }
+  .prose blockquote {
+    @apply border-l-4 border-indigo-500 pl-4 py-2 my-6 italic text-foreground/80;
+  }
+  .prose a {
+    @apply text-indigo-600 dark:text-indigo-400 underline-offset-4;
+  }
+  .prose img {
+    @apply rounded-xl shadow-lg my-8;
+  }
+  .prose code {
+    @apply px-1.5 py-0.5 rounded-md bg-muted text-sm font-mono text-foreground;
+  }
+  .prose pre {
+    @apply p-4 rounded-xl bg-muted overflow-x-auto my-6;
+  }
+  .prose pre code {
+    @apply bg-transparent p-0 text-sm;
+  }
+}
