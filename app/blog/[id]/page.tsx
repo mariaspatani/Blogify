@@ -5,23 +5,23 @@ import { BlogDetail } from '@/components/blog/BlogDetail';
 import { RelatedPosts } from '@/components/blog/RelatedPosts';
 import { CommentSection } from '@/components/blog/CommentSection';
 import { Breadcrumb } from '@/components/blog/Breadcrumb';
+import { LocalBlogPage } from '@/components/blog/LocalBlogPage';
 
 interface BlogPageProps {
   params: { id: string };
 }
 
 export async function generateMetadata({ params }: BlogPageProps): Promise<Metadata> {
-  const post = await getPostById(params.id);
-  if (!post) {
-    return { title: 'Article Not Found' };
+  // Local posts can't be resolved server-side — return generic title
+  if (params.id.startsWith('local-')) {
+    return { title: 'Blog Post | Blogify' };
   }
-
+  const post = await getPostById(params.id);
+  if (!post) return { title: 'Article Not Found' };
   return {
     title: post.title,
     description: post.description,
-    alternates: {
-      canonical: `/blog/${post.id}`,
-    },
+    alternates: { canonical: `/blog/${post.id}` },
     openGraph: {
       title: post.title,
       description: post.description,
@@ -40,11 +40,13 @@ export async function generateMetadata({ params }: BlogPageProps): Promise<Metad
 }
 
 export default async function BlogPage({ params }: BlogPageProps) {
-  const post = await getPostById(params.id);
-
-  if (!post) {
-    notFound();
+  // Local posts are stored in localStorage — delegate rendering to a client component
+  if (params.id.startsWith('local-')) {
+    return <LocalBlogPage id={params.id} />;
   }
+
+  const post = await getPostById(params.id);
+  if (!post) notFound();
 
   const [relatedPosts, adjacentPosts] = await Promise.all([
     getRelatedPosts(post.id, post.category),

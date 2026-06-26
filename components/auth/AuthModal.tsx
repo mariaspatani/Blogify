@@ -1,10 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
-import { X, Mail, Lock, User, Eye, EyeOff, Loader2, Chrome } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { X, Mail, Lock, User, Eye, EyeOff, Loader2 } from 'lucide-react';
 
 type View = 'signin' | 'signup' | 'reset';
 
@@ -13,7 +12,7 @@ interface AuthModalProps {
 }
 
 export function AuthModal({ onClose }: AuthModalProps) {
-  const { signInWithGoogle, signInWithEmail, signUpWithEmail, resetPassword } = useAuth();
+  const { signInWithEmail, signUpWithEmail, resetPassword } = useAuth();
   const [view, setView] = useState<View>('signin');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -25,30 +24,6 @@ export function AuthModal({ onClose }: AuthModalProps) {
 
   const clearState = () => { setError(''); setSuccess(''); };
 
-  const handleGoogle = async () => {
-    clearState();
-    setLoading(true);
-    try {
-      await signInWithGoogle();
-      onClose();
-    } catch (e: unknown) {
-      // Silently ignore popup-closed and cancelled-popup errors
-      const code = (e as { code?: string })?.code ?? '';
-      if (
-        code === 'auth/popup-closed-by-user' ||
-        code === 'auth/cancelled-popup-request' ||
-        code === 'auth/popup-blocked'
-      ) {
-        // User dismissed the popup — not an error
-        return;
-      }
-      const msg = e instanceof Error ? e.message : 'Google sign-in failed';
-      setError(msg.replace('Firebase: ', '').replace(/\(auth\/.*\)\.?/, '').trim());
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     clearState();
@@ -58,7 +33,8 @@ export function AuthModal({ onClose }: AuthModalProps) {
         await signInWithEmail(email, password);
         onClose();
       } else if (view === 'signup') {
-        await signUpWithEmail(name, email, password);
+        if (!name.trim()) { setError('Please enter your name.'); return; }
+        await signUpWithEmail(name.trim(), email, password);
         onClose();
       } else {
         await resetPassword(email);
@@ -66,7 +42,12 @@ export function AuthModal({ onClose }: AuthModalProps) {
       }
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'Something went wrong';
-      setError(msg.replace('Firebase: ', '').replace(/\(auth\/.*\)\.?/, '').trim());
+      setError(
+        msg
+          .replace('Firebase: ', '')
+          .replace(/\(auth\/.*\)\.?/, '')
+          .trim()
+      );
     } finally {
       setLoading(false);
     }
@@ -100,7 +81,7 @@ export function AuthModal({ onClose }: AuthModalProps) {
               {view === 'reset' && 'Reset password'}
             </h2>
             <p className="text-sm text-muted-foreground mt-0.5">
-              {view === 'signin' && 'Sign in to like, comment and bookmark'}
+              {view === 'signin' && 'Sign in to like, comment and write'}
               {view === 'signup' && 'Join Blogify today'}
               {view === 'reset' && 'We will send you a reset link'}
             </p>
@@ -114,36 +95,15 @@ export function AuthModal({ onClose }: AuthModalProps) {
           </button>
         </div>
 
-        <div className="px-6 py-6 space-y-4">
-          {/* Google */}
-          {view !== 'reset' && (
-            <>
-              <button
-                onClick={handleGoogle}
-                disabled={loading}
-                className="w-full flex items-center justify-center gap-3 rounded-xl border border-border bg-secondary/50 px-4 py-3 text-sm font-medium text-foreground hover:bg-accent/50 transition-all disabled:opacity-50"
-              >
-                {loading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Chrome className="h-4 w-4 text-[#4285F4]" aria-hidden="true" />
-                )}
-                Continue with Google
-              </button>
-
-              <div className="flex items-center gap-3">
-                <div className="flex-1 h-px bg-border" />
-                <span className="text-xs text-muted-foreground">or</span>
-                <div className="flex-1 h-px bg-border" />
-              </div>
-            </>
-          )}
-
-          {/* Form */}
+        <div className="px-6 py-6">
           <form onSubmit={handleSubmit} className="space-y-3">
+            {/* Name — signup only */}
             {view === 'signup' && (
               <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                <User
+                  className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"
+                  aria-hidden="true"
+                />
                 <input
                   type="text"
                   value={name}
@@ -156,8 +116,12 @@ export function AuthModal({ onClose }: AuthModalProps) {
               </div>
             )}
 
+            {/* Email */}
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" aria-hidden="true" />
+              <Mail
+                className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"
+                aria-hidden="true"
+              />
               <input
                 type="email"
                 value={email}
@@ -169,9 +133,13 @@ export function AuthModal({ onClose }: AuthModalProps) {
               />
             </div>
 
+            {/* Password */}
             {view !== 'reset' && (
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                <Lock
+                  className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"
+                  aria-hidden="true"
+                />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
@@ -193,6 +161,7 @@ export function AuthModal({ onClose }: AuthModalProps) {
               </div>
             )}
 
+            {/* Feedback */}
             {error && (
               <p className="text-sm text-red-500 bg-red-500/10 rounded-lg px-3 py-2" role="alert">
                 {error}
@@ -209,15 +178,15 @@ export function AuthModal({ onClose }: AuthModalProps) {
               disabled={loading}
               className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-3 text-sm font-medium text-white shadow-lg shadow-indigo-500/20 hover:shadow-xl transition-all disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
             >
-              {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+              {loading && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
               {view === 'signin' && 'Sign In'}
               {view === 'signup' && 'Create Account'}
               {view === 'reset' && 'Send Reset Link'}
             </button>
           </form>
 
-          {/* Footer links */}
-          <div className="flex flex-col items-center gap-2 pt-1">
+          {/* Footer nav */}
+          <div className="flex flex-col items-center gap-2 pt-4">
             {view === 'signin' && (
               <>
                 <button

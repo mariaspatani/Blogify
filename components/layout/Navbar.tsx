@@ -21,6 +21,8 @@ import {
   Search,
   LogOut,
   LogIn,
+  SquarePen,
+  FileText,
 } from 'lucide-react';
 
 const navLinks = [
@@ -125,7 +127,16 @@ export function Navbar() {
 
               {/* Auth */}
               {user ? (
-                <div className="relative">
+                <div className="relative flex items-center gap-2">
+                  {/* Write button — desktop */}
+                  <Link
+                    href="/write"
+                    className="hidden lg:inline-flex items-center gap-1.5 rounded-lg border border-indigo-500/30 bg-indigo-500/10 px-3 py-2 text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500/20 transition-all"
+                    aria-label="Write a post"
+                  >
+                    <SquarePen className="h-4 w-4" aria-hidden="true" />
+                    Write
+                  </Link>
                   <button
                     onClick={() => setUserMenuOpen((v) => !v)}
                     className="flex items-center justify-center h-9 w-9 rounded-full overflow-hidden ring-2 ring-border hover:ring-indigo-500 transition-all"
@@ -156,6 +167,23 @@ export function Navbar() {
                             <p className="text-sm font-medium text-foreground truncate">{user.displayName ?? 'User'}</p>
                             <p className="text-xs text-muted-foreground truncate">{user.email}</p>
                           </div>
+                          <Link
+                            href="/my-posts"
+                            onClick={() => setUserMenuOpen(false)}
+                            className="flex w-full items-center gap-2 px-4 py-3 text-sm text-muted-foreground hover:bg-accent/50 hover:text-foreground transition-colors"
+                          >
+                            <FileText className="h-4 w-4" aria-hidden="true" />
+                            My Posts
+                          </Link>
+                          <Link
+                            href="/write"
+                            onClick={() => setUserMenuOpen(false)}
+                            className="flex w-full items-center gap-2 px-4 py-3 text-sm text-muted-foreground hover:bg-accent/50 hover:text-foreground transition-colors"
+                          >
+                            <SquarePen className="h-4 w-4" aria-hidden="true" />
+                            Write a Post
+                          </Link>
+                          <div className="border-t border-border" />
                           <button
                             onClick={async () => { setUserMenuOpen(false); await logout(); }}
                             className="flex w-full items-center gap-2 px-4 py-3 text-sm text-muted-foreground hover:bg-accent/50 hover:text-foreground transition-colors"
@@ -269,6 +297,16 @@ export function Navbar() {
                     <LogIn className="h-4 w-4" aria-hidden="true" />
                     Sign In
                   </button>
+                )}
+                {user && (
+                  <Link
+                    href="/write"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-500/10 border border-indigo-500/20 px-3 py-2.5 text-sm font-medium text-indigo-600 dark:text-indigo-400"
+                  >
+                    <SquarePen className="h-4 w-4" aria-hidden="true" />
+                    Write a Post
+                  </Link>
                 )}
               </div>
               <nav className="flex flex-col px-4 gap-1">

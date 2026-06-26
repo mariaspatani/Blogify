@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
-import { createPost, updatePost, type CreatePostInput } from '@/services/blogService';
+import { saveLocalPost, updateLocalPost } from '@/lib/localPosts';
 import { CATEGORIES, type BlogPost } from '@/types/blog';
 import { ImageWithFallback } from '@/components/ui-custom/ImageWithFallback';
 import { Loader2, Save, Eye, ArrowLeft } from 'lucide-react';
@@ -37,16 +37,19 @@ export function PostEditor({ post }: PostEditorProps) {
 
   if (!user) return null; // guarded by parent page
 
+  const parsedTags = tagsRaw
+    .split(',')
+    .map((t) => t.trim().toLowerCase())
+    .filter(Boolean);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !content.trim()) {
-      setError('Title and content are required.');
-      return;
-    }
+    if (!title.trim()) { setError('Title is required.'); return; }
+    if (!content.trim()) { setError('Content is required.'); return; }
     setError('');
     setSaving(true);
 
-    const input: CreatePostInput = {
+    const fields = {
       title: title.trim(),
       description: description.trim(),
       content: content.trim(),
@@ -55,23 +58,22 @@ export function PostEditor({ post }: PostEditorProps) {
       author: user.displayName ?? user.email ?? 'Anonymous',
       authorAvatar: user.photoURL ?? '',
       readingTime,
-      tags: tagsRaw
-        .split(',')
-        .map((t) => t.trim().toLowerCase())
-        .filter(Boolean),
+      tags: parsedTags,
       featured,
       trending,
     };
 
     try {
       if (post) {
-        await updatePost(post.id, input);
-        router.push(`/blog/${post.id}`);
+        // Edit existing local post
+        const updated = updateLocalPost(post.id, fields);
+        if (!updated) throw new Error('Post not found in local storage.');
+        router.push(`/blog/${updated.id}`);
       } else {
-        const created = await createPost(input);
+        // Create new local post
+        const created = saveLocalPost(fields);
         router.push(`/blog/${created.id}`);
       }
-      router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save post.');
     } finally {
@@ -97,7 +99,7 @@ export function PostEditor({ post }: PostEditorProps) {
           className="flex items-center justify-center rounded-lg p-2 border border-border hover:bg-accent/50 transition-colors"
           aria-label="Go back"
         >
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
         </button>
         <div>
           <h1 className="text-2xl font-bold text-foreground tracking-tight">
@@ -116,19 +118,19 @@ export function PostEditor({ post }: PostEditorProps) {
           </p>
         )}
 
-        {/* Cover Image */}
+        {/* Cover Image URL */}
         <div>
           <label htmlFor="coverImage" className={labelClass}>
-            Cover Image URL
+            Cover Image URL{' '}
+            <span className="text-muted-foreground font-normal">
+              (Unsplash, Picsum, or any public URL)
+            </span>
           </label>
           <input
             id="coverImage"
             type="url"
             value={coverImage}
-            onChange={(e) => {
-              setCoverImage(e.target.value);
-              setPreviewCover(e.target.value);
-            }}
+            onChange={(e) => { setCoverImage(e.target.value); setPreviewCover(e.target.value); }}
             placeholder={DEFAULT_COVER}
             className={inputClass}
           />
@@ -189,9 +191,7 @@ export function PostEditor({ post }: PostEditorProps) {
               className={inputClass}
             >
               {CATEGORIES.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
+                <option key={c} value={c}>{c}</option>
               ))}
             </select>
           </div>
@@ -225,6 +225,15 @@ export function PostEditor({ post }: PostEditorProps) {
             placeholder="nextjs, react, typescript"
             className={inputClass}
           />
+          {parsedTags.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {parsedTags.map((t) => (
+                <span key={t} className="inline-flex items-center rounded-md bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 text-xs text-indigo-600 dark:text-indigo-400">
+                  #{t}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Content */}
@@ -235,11 +244,11 @@ export function PostEditor({ post }: PostEditorProps) {
           </label>
           <textarea
             id="content"
-            rows={18}
+            rows={20}
             value={content}
             onChange={(e) => setContent(e.target.value)}
             required
-            placeholder={`<p>Start writing your article here...</p>\n\n<h2>Section Heading</h2>\n<p>Your content...</p>`}
+            placeholder={`<p>Start writing your article here...</p>\n\n<h2>Section Heading</h2>\n<p>More content...</p>`}
             className={cn(inputClass, 'resize-y font-mono text-xs leading-relaxed')}
           />
         </div>
@@ -267,7 +276,7 @@ export function PostEditor({ post }: PostEditorProps) {
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-3 pt-2">
+        <div className="flex items-center gap-3 pt-2 border-t border-border">
           <button
             type="submit"
             disabled={saving}
