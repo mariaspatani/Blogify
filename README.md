@@ -24,7 +24,7 @@ A full-featured, production-ready blogging platform built with **Next.js 13 App 
 
 ## Live Demo
 
-> Deployed on Vercel — [https://blogify.vercel.app](https://blogify.vercel.app)
+> Deployed on Vercel —https://blogify-blond-theta.vercel.app/
 
 ---
 
