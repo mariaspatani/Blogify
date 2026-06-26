@@ -480,4 +480,4 @@ MIT — free to use for personal and commercial projects.
 
 ---
 
-*Built with care by the Blogify team.*
+
