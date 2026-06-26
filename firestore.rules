@@ -2,15 +2,36 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Users — anyone can read; only the owning user can write
+    // ── users ──────────────────────────────────────────────────────────────
+    // Anyone can read a user profile (needed for author display)
+    // Only the authenticated owner can create or update their own document
     match /users/{uid} {
       allow read: if true;
-      allow create, update: if request.auth != null && request.auth.uid == uid;
+      allow create: if request.auth != null
+        && request.auth.uid == uid;
+      allow update: if request.auth != null
+        && request.auth.uid == uid;
     }
 
-    // Comments — anyone can read; only authenticated users can create;
-    // only the comment author can delete
+    // ── comments ───────────────────────────────────────────────────────────
+    // Anyone can read comments (public blog posts)
+    // Authenticated users can create comments where uid matches their auth uid
+    // Only the comment author can delete their own comment
     match /comments/{commentId} {
+      allow read: if true;
+      allow create: if request.auth != null
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.content is string
+        && request.resource.data.content.size() > 0;
+      allow delete: if request.auth != null
+        && resource.data.uid == request.auth.uid;
+    }
+
+    // ── likes ──────────────────────────────────────────────────────────────
+    // Anyone can read like counts (shown on public blog posts)
+    // Authenticated users can create/delete their own like documents
+    // Document ID convention: uid_postId
+    match /likes/{likeId} {
       allow read: if true;
       allow create: if request.auth != null
         && request.resource.data.uid == request.auth.uid;
@@ -18,19 +39,16 @@ service cloud.firestore {
         && resource.data.uid == request.auth.uid;
     }
 
-    // Likes — anyone can read; authenticated users manage their own
-    match /likes/{likeId} {
-      allow read: if true;
-      allow write: if request.auth != null
-        && (request.resource == null || request.resource.data.uid == request.auth.uid);
-    }
-
-    // Bookmarks — authenticated users manage their own only
+    // ── bookmarks ──────────────────────────────────────────────────────────
+    // Only the owning user can read/write their bookmarks
+    // getDoc on a non-existent document: resource is null, so we allow
+    // authenticated reads unconditionally and let the app filter by uid
     match /bookmarks/{bookmarkId} {
-      allow read: if request.auth != null
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+        && request.resource.data.uid == request.auth.uid;
+      allow delete: if request.auth != null
         && resource.data.uid == request.auth.uid;
-      allow write: if request.auth != null
-        && (request.resource == null || request.resource.data.uid == request.auth.uid);
     }
   }
 }

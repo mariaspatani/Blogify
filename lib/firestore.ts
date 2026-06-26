@@ -15,7 +15,6 @@ import {
   collection,
   query,
   where,
-  orderBy,
   getDocs,
   serverTimestamp,
   Timestamp,
@@ -96,13 +95,20 @@ export interface FirestoreComment {
 
 export async function getComments(postId: string): Promise<FirestoreComment[]> {
   try {
+    // No orderBy — avoids requiring a composite index in Firestore.
+    // Sort client-side by createdAt descending instead.
     const q = query(
       collection(db, 'comments'),
-      where('postId', '==', postId),
-      orderBy('createdAt', 'desc')
+      where('postId', '==', postId)
     );
     const snap = await getDocs(q);
-    return snap.docs.map((d) => ({ id: d.id, ...d.data() } as FirestoreComment));
+    const comments = snap.docs.map((d) => ({ id: d.id, ...d.data() } as FirestoreComment));
+    // Sort newest-first client-side
+    return comments.sort((a, b) => {
+      const aMs = a.createdAt?.toMillis() ?? 0;
+      const bMs = b.createdAt?.toMillis() ?? 0;
+      return bMs - aMs;
+    });
   } catch {
     return [];
   }

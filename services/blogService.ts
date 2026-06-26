@@ -161,3 +161,55 @@ export async function getPopularCategories(): Promise<
 }
 
 // comments are now managed by Firestore — see lib/firestore.ts
+
+// ─── mutations (Create / Edit / Delete — authenticated users only) ──────────
+
+export interface CreatePostInput {
+  title: string;
+  description: string;
+  content: string;
+  coverImage: string;
+  category: string;
+  author: string;
+  authorAvatar: string;
+  readingTime: number;
+  tags: string[];
+  featured: boolean;
+  trending: boolean;
+}
+
+export async function createPost(input: CreatePostInput): Promise<BlogPost> {
+  const body: Omit<BlogPost, 'id'> = {
+    ...input,
+    publishDate: new Date().toISOString().split('T')[0],
+    likes: 0,
+    views: 0,
+  };
+  const res = await fetch(POSTS_API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`Failed to create post: ${res.status}`);
+  const post: BlogPost = await res.json();
+  return { ...post, tags: normaliseTags(post.tags) };
+}
+
+export async function updatePost(
+  id: string,
+  input: Partial<CreatePostInput>
+): Promise<BlogPost> {
+  const res = await fetch(`${POSTS_API_URL}/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) throw new Error(`Failed to update post: ${res.status}`);
+  const post: BlogPost = await res.json();
+  return { ...post, tags: normaliseTags(post.tags) };
+}
+
+export async function deletePost(id: string): Promise<void> {
+  const res = await fetch(`${POSTS_API_URL}/${id}`, { method: 'DELETE' });
+  if (!res.ok) throw new Error(`Failed to delete post: ${res.status}`);
+}

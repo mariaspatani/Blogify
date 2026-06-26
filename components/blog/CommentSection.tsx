@@ -28,6 +28,7 @@ export function CommentSection({ postId }: CommentSectionProps) {
   const { user } = useAuth();
   const [comments, setComments] = useState<FirestoreComment[]>([]);
   const [loadingComments, setLoadingComments] = useState(true);
+  const [commentError, setCommentError] = useState('');
   const [newComment, setNewComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
@@ -58,8 +59,8 @@ export function CommentSection({ postId }: CommentSectionProps) {
         newComment.trim()
       );
       if (result.error) {
-        // Show error inline but don't crash
-        console.error('Comment error:', result.error);
+        setCommentError(result.error);
+        setTimeout(() => setCommentError(''), 4000);
         return;
       }
       setComments((prev) => [result.data!, ...prev]);
@@ -113,19 +114,26 @@ export function CommentSection({ postId }: CommentSectionProps) {
                     aria-label="Write a comment"
                     className="w-full rounded-xl border border-border bg-secondary/50 px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 resize-none transition-all"
                   />
-                  <div className="mt-2 flex justify-end">
-                    <button
-                      type="submit"
-                      disabled={submitting || !newComment.trim()}
-                      className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-indigo-500/20 hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {submitting ? (
-                        <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-                      ) : (
-                        <Send className="h-4 w-4" aria-hidden="true" />
-                      )}
-                      Post Comment
-                    </button>
+                  <div className="mt-2 flex flex-col gap-2">
+                    {commentError && (
+                      <p className="text-sm text-red-500 bg-red-500/10 rounded-lg px-3 py-2" role="alert">
+                        {commentError}
+                      </p>
+                    )}
+                    <div className="flex justify-end">
+                      <button
+                        type="submit"
+                        disabled={submitting || !newComment.trim()}
+                        className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-indigo-500/20 hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {submitting ? (
+                          <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                        ) : (
+                          <Send className="h-4 w-4" aria-hidden="true" />
+                        )}
+                        Post Comment
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
