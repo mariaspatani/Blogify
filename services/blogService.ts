@@ -3,25 +3,33 @@ import { POSTS_API_URL } from '@/lib/api';
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
+function normaliseTags(tags: unknown): string[] {
+  if (Array.isArray(tags)) return tags as string[];
+  if (typeof tags === 'string') {
+    return tags
+      .replace(/[\[\]"]/g, '')
+      .split(',')
+      .map((t) => t.trim())
+      .filter(Boolean);
+  }
+  return [];
+}
+
 async function fetchPosts(): Promise<BlogPost[]> {
-  const res = await fetch(POSTS_API_URL, {
-    next: { revalidate: 60 }, // ISR — revalidate every 60 s
-  });
-  if (!res.ok) throw new Error(`MockAPI error: ${res.status}`);
-  const data: BlogPost[] = await res.json();
-  // MockAPI stores tags as a JSON string when POSTed — normalise if needed
-  return data.map((p) => ({
-    ...p,
-    tags: Array.isArray(p.tags)
-      ? p.tags
-      : typeof p.tags === 'string'
-      ? (p.tags as string)
-          .replace(/[\[\]"]/g, '')
-          .split(',')
-          .map((t) => t.trim())
-          .filter(Boolean)
-      : [],
-  }));
+  try {
+    const res = await fetch(POSTS_API_URL, {
+      next: { revalidate: 60 }, // ISR — revalidate every 60 s
+    });
+    if (!res.ok) {
+      console.error(`MockAPI responded with ${res.status}`);
+      return [];
+    }
+    const data: BlogPost[] = await res.json();
+    return data.map((p) => ({ ...p, tags: normaliseTags(p.tags) }));
+  } catch (err) {
+    console.error('fetchPosts failed:', err);
+    return [];
+  }
 }
 
 // ─── public API ─────────────────────────────────────────────────────────────
@@ -35,23 +43,16 @@ export async function getAllPosts(): Promise<BlogPost[]> {
 }
 
 export async function getPostById(id: string): Promise<BlogPost | null> {
-  const res = await fetch(`${POSTS_API_URL}/${id}`, {
-    next: { revalidate: 60 },
-  });
-  if (!res.ok) return null;
-  const post: BlogPost = await res.json();
-  return {
-    ...post,
-    tags: Array.isArray(post.tags)
-      ? post.tags
-      : typeof post.tags === 'string'
-      ? (post.tags as string)
-          .replace(/[\[\]"]/g, '')
-          .split(',')
-          .map((t) => t.trim())
-          .filter(Boolean)
-      : [],
-  };
+  try {
+    const res = await fetch(`${POSTS_API_URL}/${id}`, {
+      next: { revalidate: 60 },
+    });
+    if (!res.ok) return null;
+    const post: BlogPost = await res.json();
+    return { ...post, tags: normaliseTags(post.tags) };
+  } catch {
+    return null;
+  }
 }
 
 export async function getFeaturedPosts(): Promise<BlogPost[]> {
